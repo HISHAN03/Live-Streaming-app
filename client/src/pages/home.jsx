@@ -7,15 +7,35 @@ const LiveStreamPage = () => {
   const [isAudioOn, setIsAudioOn] = useState(true);
 
   useEffect(() => {
-    // Access user's webcam and microphone and attach the stream to the video element
-    navigator.mediaDevices
-      .getUserMedia({ video: isCameraOn, audio: isAudioOn })
-      .then((stream) => {
-        videoRef.current.srcObject = stream;
-      })
-      .catch((error) => {
+    let localStream;
+
+    // Function to get the user's media stream
+    const getMediaStream = async () => {  
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: isCameraOn, audio: isAudioOn });
+
+        // Attach the media stream to the video element
+        videoRef.current.srcObject = localStream;
+
+        // Convert media stream to WebRTC output stream
+        // Here we are setting up a simple peer connection just to demonstrate the conversion
+        const peerConnection = new RTCPeerConnection();
+        localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+
+        // Do something with the WebRTC output stream here (send it to a server, another peer, etc.)
+      } catch (error) {
         console.error("Error accessing webcam or microphone:", error);
-      });
+      }
+    };
+
+    getMediaStream();
+
+    // Clean up the stream when the component unmounts
+    return () => {
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+    };
   }, [isCameraOn, isAudioOn]);
 
   const handleCameraToggle = () => {
@@ -29,7 +49,9 @@ const LiveStreamPage = () => {
   return (
     <StyledContainer>
       <h1>Live Stream</h1>
-      <StyledVideo ref={videoRef} autoPlay playsInline muted={!isAudioOn} />
+      <StyledVideo>
+        <video ref={videoRef} autoPlay playsInline muted={!isAudioOn} />
+      </StyledVideo>
       <ButtonContainer>
         <button onClick={handleCameraToggle}>{isCameraOn ? "Turn Off Camera" : "Turn On Camera"}</button>
         <button onClick={handleAudioToggle}>{isAudioOn ? "Mute Audio" : "Unmute Audio"}</button>
@@ -44,11 +66,22 @@ const StyledContainer = styled.div`
   align-items: center;
 `;
 
-const StyledVideo = styled.video`
-  width: 640px;
-  height: 480px;
+const StyledVideo = styled.div`
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
   margin: 20px 0;
   border: 1px solid #ccc;
+  overflow: hidden;
+
+  video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
 `;
 
 const ButtonContainer = styled.div`
