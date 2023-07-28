@@ -3,15 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components"
 import { Token } from "../secrets";
 
-
 export default function Login() 
-  {
+{
+  
     const navigate = useNavigate();
 
-      useEffect(() => {
+    useEffect(() => {
         if (Token !== null){
             navigate("../");
-        }},[])
+        }
+    },[])
 
     const [auth, setAuth] = useState({
         username: null,
@@ -35,7 +36,7 @@ export default function Login()
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
-                     },
+            },
             body: JSON.stringify(data)
         }
         let res = await fetch("http://localhost:3010/signup", options);
