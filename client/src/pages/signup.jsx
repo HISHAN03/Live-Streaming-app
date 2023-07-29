@@ -37,7 +37,8 @@ export default function Login()
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            credentials: 'include'
         }
         let res = await fetch("http://localhost:3010/signup", options);
 
@@ -51,7 +52,7 @@ export default function Login()
         
         if("token" in output){
             setMsg("");
-            await localStorage.setItem("token", output.token);
+             localStorage.setItem("token", output.token);
             navigate("../")
         }
 

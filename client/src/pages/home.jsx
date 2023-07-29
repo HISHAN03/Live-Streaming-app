@@ -9,13 +9,6 @@ const LiveStreamPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if the token is present in localStorage
-    const token = localStorage.getItem("token");
-    if (!token) {
-      // If the token is not present, navigate to the login page
-      navigate("/login");
-    }
-
     let localStream;
     const getMediaStream = async () => {
       try {

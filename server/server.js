@@ -5,6 +5,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const User = require("./schema/userModel");
 const jwt = require("jsonwebtoken");
+const jwtSecret="reifberuifbwuief";
 dotenv.config();
 
 const mongoose = require("mongoose");
@@ -25,55 +26,83 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-const secretKey = "your_secret_key"; // Change this to a secure secret key
+app.get("/profile", (req, res) => {
+  const token = req.cookies?.token;
+  if (token) {
+    jwt.verify(token, jwtSecret, {}, (err, userData) => {
+      if (err) console.log(err);
+      res.json(userData);
+      console.log("profile-connected")
+    });}
+     else {
+    res.status(401).json("no token");
+    console.log("profile-NOT-connected")
+    }});
 
 // Signup route
-app.post('/signup', (req, res) => {
+app.post('/signup', async (req, res) => {
   let { username, password } = req.body;
-  let isUser = User.find(user => user.username == username);
-  if (!isUser) {
-    let user = { username, password };
-    user.push(user);
-   jwt.sign({ name:username },jwtSecret,{},(err, token) => {
-      if (err) 
-      {
+
+  try {
+    let isUser = await User.findOne({ username });
+
+    if (isUser) {
+      return res.status(401).json({ message: "Username already exists" });
+    }
+
+    let user = new User({ username, password });
+    await user.save();
+
+    jwt.sign({ name: username }, jwtSecret, {}, (err, token) => {
+      if (err) {
         console.log(err);
-        res.status(500).json("Error signing token");
-      } else 
-      {
+        return res.status(500).json("Error signing token");
+      } else {
         res
           .cookie("token", token, { sameSite: "none", secure: true })
           .status(201)
-          .json({ id: createdUser._id });
+          .json({ id: user._id });
       }
-    }
-  );
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("Internal Server Error");
   }
-  else { res.status(401).json({ message: "username already exists" });}})
+});
 
 
-app.post('/login', (req, res) => 
-{
-  let { username, password } = req.body;
-  let user = User.find(user => user.username == username);
-  if (!user) return res.status(404).json({ message: "User Not Found" });
-  let pass = user.find(user => user.password == password);
-  if (!pass) return res.status(401).json({ message: "Invalid Password" });
-jwt.sign({ name:username },jwtSecret,{},(err, token) => {
-      if (err) 
-      {
-        console.log(err);
-        res.status(500).json("Error signing token");
-      } else 
-      {
-        res
-          .cookie("token", token, { sameSite: "none", secure: true })
-          .status(201)
-          .json({ id: createdUser._id });
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const foundUser = await User.findOne({ username });
+  
+  if (foundUser) {
+    jwt.sign(
+      { name: username },
+      jwtSecret,
+      {},
+      (err, token) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).json({ message: "Error signing token" });
+        }
+        
+        res.cookie("token", token, { sameSite: "none", secure: true }).json({
+          id: foundUser._id,
+          message: "Login successful", // Add this response message
+        });
       }
-    }
-  );
-})
+    );
+  } else {
+    res.status(401).json({ message: "Invalid credentials" });
+  }
+});
+
+  
+  app.get('/people', async (req,res) => {
+    const users = await User.find({}, {'_id':1,username:1});
+    res.json(users);
+   
+  });
 
 
 app.listen(port, () => { console.log(`Server is running on http://localhost:${port}`); });

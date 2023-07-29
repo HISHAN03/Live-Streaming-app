@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components"
-import { Token } from "../secrets";
+
 
 export default function Login(){
+  
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (Token !== null){
-            navigate("../");
-        }
-    },[])
 
     const [auth, setAuth] = useState({
         username: null,
@@ -34,21 +30,20 @@ export default function Login(){
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            credentials: 'include'
         }
         let res = await fetch("http://localhost:3010/login", options);
 
-        // get the output as a responce from the server
         let output = await res.json();
 
         if("message" in output){
             setMsg(output.message + " !!")
+            
         }
-        
-        if("token" in output){
-            localStorage.setItem("token", output.token);
-            navigate("../");
-        }
+        if ("message" in output && output.message === "Login successful") {
+            navigate("/home"); 
+          }
     }
 
     const handelInputChange = (e) => {
