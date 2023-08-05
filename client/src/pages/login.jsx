@@ -4,27 +4,30 @@ import styled from "styled-components"
 
 
 export default function Login(){
-  
 
     const navigate = useNavigate();
-
-
+    useEffect(() => {
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="));
+    
+        if (token) {
+          
+          navigate("/home"); // Replace "/home" with the desired URL of your home page
+        }
+      }, [navigate]);
+      
     const [auth, setAuth] = useState({
         username: null,
-        password: null,
-    })
+        password: null,})
     const [msg, setMsg] = useState("");
-
     const handelSubmit = async (e) => {
         e.preventDefault();
         let { username, password } = auth;
-
-        //payload
         let data = {
             "username": username,
             "password": password,
         };
-
         let options = {
             method: 'POST',
             headers: {
@@ -55,7 +58,8 @@ export default function Login(){
         <StyledDiv>
             <div>
                 <span id="modal"style={{color : "lightcoral", opacity: (msg == "")? "0" : "1"}}>{msg}</span>
-                <h1>Welcome Back!</h1>
+                <h1>Live-Streeming-App</h1>
+                <h2>Welcome Back!</h2>
                 <form>
                     <input type="text" name="username" id="email" placeholder="Username" onChange={handelInputChange}/>
                     <input type="password" name="password" id="password" placeholder="Password" onChange={handelInputChange}/>

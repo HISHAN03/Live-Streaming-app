@@ -7,6 +7,7 @@ const LiveStreamPage = () => {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const navigate = useNavigate();
+  const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
     let localStream;
@@ -42,6 +43,20 @@ const LiveStreamPage = () => {
     setIsAudioOn((prevIsAudioOn) => !prevIsAudioOn);
   };
 
+  const handleSearch = async () => {
+    try {
+      const response = await fetch(`http://localhost:3010/search?name=${searchInput}`);
+      const searchResults = await response.json();
+      console.log(searchResults);
+    } catch (error) {
+      console.error("Error searching:", error);
+    }
+  };
+  const handleSearchInputChange = (event) => {
+    setSearchInput(event.target.value);
+  };
+
+
   return (
     <StyledContainer>
       <h1>Live Stream</h1>
@@ -55,8 +70,18 @@ const LiveStreamPage = () => {
         <button onClick={handleAudioToggle}>
           {isAudioOn ? "Mute Audio" : "Unmute Audio"}
         </button>
+        <button onClick={handleAudioToggle}>
+          click me
+        </button> 
       </ButtonContainer>
-    </StyledContainer>
+      <input
+        type="text"
+        value={searchInput}
+        onChange={handleSearchInputChange}
+        placeholder="Enter a name to search"
+      />
+      <button onClick={handleSearch}>Search</button>
+    </ StyledContainer>
   );
 };
 

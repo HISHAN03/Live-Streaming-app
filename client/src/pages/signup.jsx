@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components"
-import { Token } from "../secrets";
+
 
 export default function Login() 
 {
   
     const navigate = useNavigate();
-
     useEffect(() => {
-        if (Token !== null){
-            navigate("../");
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="));
+    
+        if (token) {
+          
+          navigate("/home"); 
         }
-    },[])
+      }, [navigate]);
+ 
 
     const [auth, setAuth] = useState({
         username: null,
@@ -50,12 +55,7 @@ export default function Login()
             setMsg(output.message + " !!")
         }
         
-        if("token" in output){
-            setMsg("");
-             localStorage.setItem("token", output.token);
-            navigate("../")
-        }
-
+      
     }
 
     const handelInputChange = (e) => {
@@ -66,7 +66,7 @@ export default function Login()
         <StyledDiv>
             <div>
             <span id="modal"style={{color : "lightcoral", opacity: (msg == "")? "0" : "1"}}>{msg}</span>
-                <h1>Let's code</h1>
+            <h1>Live-Streeming-App</h1>
                 <form>
                     <input type="text" name="username" placeholder="Username" onChange={handelInputChange} />
                     <input type="text" name="email" placeholder="Email" onChange={handelInputChange} />
