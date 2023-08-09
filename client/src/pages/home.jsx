@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import Brodcast from "../components/brodcast";
 
 const LiveStreamPage = () => {
-  const videoRef = useRef();
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [isAudioOn, setIsAudioOn] = useState(true);
-  const navigate = useNavigate();
-  const [searchInput, setSearchInput] = useState("");
-
+const videoRef = useRef();
+const [isCameraOn, setIsCameraOn] = useState(true);
+const [isAudioOn, setIsAudioOn] = useState(true);
+const navigate = useNavigate();
+const [searchInput, setSearchInput] = useState("");
   useEffect(() => {
     let localStream;
     const getMediaStream = async () => {
@@ -59,7 +59,7 @@ const LiveStreamPage = () => {
 
   return (
     <StyledContainer>
-      <h1>Live Stream</h1>
+       <h1>Live Stream</h1>
       <StyledVideo>
         <video ref={videoRef} autoPlay playsInline muted={!isAudioOn} />
       </StyledVideo>
@@ -73,15 +73,11 @@ const LiveStreamPage = () => {
         <button onClick={handleAudioToggle}>
           click me
         </button> 
-      </ButtonContainer>
-      <input
-        type="text"
-        value={searchInput}
-        onChange={handleSearchInputChange}
-        placeholder="Enter a name to search"
-      />
-      <button onClick={handleSearch}>Search</button>
-    </ StyledContainer>
+       
+        <Brodcast />
+      </ButtonContainer> 
+
+        </ StyledContainer>
   );
 };
 

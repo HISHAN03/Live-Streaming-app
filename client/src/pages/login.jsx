@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components"
+import Login1 from "../components/login";
+import Logout from "../components/logout";
+import {gapi} from "gapi-script";
+const cliendId="1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com";
 
 
 export default function Login(){
-
+    // useEffect(()=>
+    // {
+    //   function start()
+    //   {
+    //     gapi.clien.init({
+    //       cliendId:cliendId,
+    //       scope:""
+    //     })
+    //   }
+    //   gapi.load('client:auth2',start);
+    // })
     const navigate = useNavigate();
     useEffect(() => {
         const token = document.cookie
@@ -28,10 +42,10 @@ export default function Login(){
             "username": username,
             "password": password,
         };
-        let options = {
+    let options = {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json;charset=utf-8',
+            'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(data),
             credentials: 'include'
@@ -65,6 +79,8 @@ export default function Login(){
                     <input type="password" name="password" id="password" placeholder="Password" onChange={handelInputChange}/>
                     <button onClick={handelSubmit}>Login</button>
                     <Link to={"../signup"}><p>New User? Signup</p></Link>
+                    <Login1 />
+                    <Logout />
                 </form>
             </div>
         </StyledDiv>
