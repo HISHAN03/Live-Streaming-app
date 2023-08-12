@@ -1,19 +1,118 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import Brodcast from "../components/brodcast";
-import BroadcastManager from "../components/brodcsatID";
-import {gapi} from "gapi-script";
-const LiveStreamPage = () => {
+import { gapi } from "gapi-script";
+const dgram = require('dgram');
+const serverPort=1234;
+const udpClient = dgram.createSocket('udp4');
+const LiveStreamPage = () => 
+{
 const videoRef = useRef();
 const [isCameraOn, setIsCameraOn] = useState(true);
 const [isAudioOn, setIsAudioOn] = useState(true);
 const navigate = useNavigate();
 const [searchInput, setSearchInput] = useState("");
-const { broadcastId } = useContext(BroadcastContext);
 const [youtubeIngestionUrl, setYoutubeIngestionUrl] = useState('')
 const [youtubeStreamName, setYoutubeStreamName] = useState('')
 const [streamId, setstreamId] = useState('')
+const [ broadcastId,setbroadcastId ] = useState('');
+
+
+const handleSendMediaData = () => {
+  // This is a placeholder method
+  // You should replace this with actual video and audio data handling and encoding
+  const mediaData = "Sample media data"; // This is just a placeholder
+
+  // Send the media data over UDP
+  udpClient.send(mediaData, 0, mediaData.length, serverPort, 'localhost', (err) => {
+    if (err) {
+      console.error('Error sending media data:', err);
+    } else {
+      console.log('Media data sent to server');
+    }
+  });
+};
+
+
+
+
+
+
+gapi.load('client', () => 
+{
+  gapi.client.init({
+    apiKey: "AIzaSyBh4zJKpPWEhYv4L27a6bPMdIhHFgwm1bw",
+      clientId: "1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com",
+      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
+      scope: 'https://www.googleapis.com/auth/youtube', 
+    });
+  });
+
+  gapi.load('client', () => {
+    gapi.client.init({
+      apiKey: "AIzaSyBh4zJKpPWEhYv4L27a6bPMdIhHFgwm1bw",
+        clientId: "1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com",
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
+        scope: 'https://www.googleapis.com/auth/youtube', 
+      });
+    });
+  
+  const createYouTubeBroadcast = async () => {
+  try {
+    await gapi.auth2.getAuthInstance().signIn(); 
+    const user = gapi.auth2.getAuthInstance().currentUser.get();
+    const accessToken = user.getAuthResponse().access_token;
+    
+    if (!accessToken) {
+      console.log("Access token not found");
+      return;
+    }
+    
+    const broadcastData = {
+      snippet: {
+        title: "Test broadcast",
+        scheduledStartTime: "2023-08-10T20:50:00Z",
+        scheduledEndTime: "2023-08-10T20:55:00Z",
+      },
+      contentDetails: {
+        enableClosedCaptions: true,
+        enableContentEncryption: true,
+        enableDvr: true,
+        enableEmbed: true,
+        recordFromStart: true,
+        startWithSlate: true,
+      },
+      status: {
+        privacyStatus: 'public',
+        selfDeclaredMadeForKids: true,
+      },
+    };
+
+    const response = await gapi.client.youtube.liveBroadcasts.insert({
+      part: ['id', 'snippet', 'contentDetails', 'status'],
+      resource: broadcastData,
+    }).then((res) => {
+      console.log('Response', res)
+      console.log(res.result.id)
+      setbroadcastId(res.result.id)
+    })
+    .catch((err) => {
+      console.error('Execute error', err)
+    });
+
+    if (response.result) {
+      console.log("Broadcast created successfully:", response.result);
+  
+
+      navigate("/home");
+    } else {
+      console.log("Error creating broadcast");
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+};
+
   useEffect(() => {
     let localStream;
     const getMediaStream = async () => {
@@ -48,20 +147,29 @@ const [streamId, setstreamId] = useState('')
     setIsAudioOn((prevIsAudioOn) => !prevIsAudioOn);
   };
 
-  const handleSearch = async () => {
-    try {
-      const response = await fetch(`http://localhost:3010/search?name=${searchInput}`);
-      const searchResults = await response.json();
-      console.log(searchResults);
-    } catch (error) {
-      console.error("Error searching:", error);
-    }
-  };
-  const handleSearchInputChange = (event) => {
-    setSearchInput(event.target.value);
-  };
+ 
+ 
 
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const authenticate = () => {
     return gapi.auth2
       .getAuthInstance()
@@ -128,34 +236,52 @@ const [streamId, setstreamId] = useState('')
           streamId: streamId,
         })
         .then((res) => {
-          console.log('Response', res)
+          console.log("sucess binding"+'Response', res)
         })
         .catch((err) => {
           console.error('Execute error', err)
         })
     }
 
-return(
 
-  
-  
-  <StyledContainer>
-       <h1>Live Stream</h1>
+    const transitionToLive = () => {
+      return gapi.client.youtube.liveBroadcasts
+        .transition({
+          part: ['id,snippet,contentDetails,status'],
+          broadcastStatus: 'live',
+          id: broadcastId,
+        })
+        .then((res) => {
+          // Handle the results here (response.result has the parsed body).
+          console.log('Response', res)
+        })
+        .catch((err) => {
+          console.log('Execute error', err)
+        })
+    }
+
+return(  
+    <StyledContainer>
+         <h1>Live Stream</h1> 
       <StyledVideo>
-        <video ref={videoRef} autoPlay playsInline muted={!isAudioOn} />
+          <video ref={videoRef} autoPlay playsInline muted={!isAudioOn} />
       </StyledVideo>
       <ButtonContainer>
-        <button onClick={handleCameraToggle}>
-          {isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+          <button onClick={handleCameraToggle}>
+            {isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
         </button>
         <button onClick={handleAudioToggle}>
-          {isAudioOn ? "Mute Audio" : "Unmute Audio"}
+            {isAudioOn ? "Mute Audio" : "Unmute Audio"}
         </button>
         <button onClick={() => authenticate().then(loadClient)}>authenticate</button> 
-  
-        <Brodcast />
+
+       <button onClick={createYouTubeBroadcast}> broadcast</button>
+       <button onClick={handleSendMediaData}>Send Media Data</button>
+
         <button onClick={createStream}>crete stream</button> 
         <button onClick={bindBroadcastToStream}>4. bind broadcast</button>
+        <button onClick={transitionToLive}>live</button>
+
       </ButtonContainer> 
 
         </ StyledContainer>

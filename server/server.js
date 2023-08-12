@@ -8,6 +8,7 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const jwtSecret="reifberuifbwuief";
 const apiKey=process.env.API_KEY;
+const dgram = require("dgram");
 const apiUrl = "https://www.googleapis.com/youtube/v3";
 const { google } = require("googleapis");
 const youtube = google.youtube({
@@ -15,6 +16,28 @@ const youtube = google.youtube({
   auth: apiKey,
 });
 dotenv.config();
+
+
+udpServer.on('message', (message, rinfo) => {
+  console.log(`Received message from ${rinfo.address}:${rinfo.port}`);
+  
+  // Handle the received data here
+  // In this example, we save the received data to a file
+  
+  // Generate a unique filename based on the timestamp
+  const timestamp = Date.now();
+  const filename = `received_data_${timestamp}.raw`;
+  
+  // Save the received data to a file
+  fs.writeFile(filename, message, (err) => {
+    if (err) {
+      console.error("Error saving data:", err);
+    } else {
+      console.log(`Data saved to ${filename}`);
+    }
+  });
+});
+
 
 const mongoose = require("mongoose");
 mongoose
@@ -34,17 +57,47 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get("/search", async (req, res, next) => {
-  try {
-    const searchQuery = req.query.name;
-    const url = `${apiUrl}/search?key=${apiKey}&type=video&part=snippet&q=${searchQuery}`;
-    const response = await axios.get(url);
-    const titles = response.data.items.map((item) => item.snippet.title);
-    res.send(titles);
-  } catch (err) {
-    next(err);
-  }
-});
+
+const {
+  inputSettings,
+  youtubeSettings,
+  customRtmpSettings,
+} = require('./ffmpeg')
+
+const ffmpegInput = inputSettings.concat(
+  youtubeSettings(youtube),
+  customRtmpSettings(customRTMP)
+)
+
+const ffmpeg = child_process.spawn('ffmpeg', ffmpegInput)
+
+
+
+ffmpeg.on('close', (code, signal) => {
+  console.log(
+    'FFmpeg child process closed, code ' + code + ', signal ' + signal
+  )
+  // ws.terminate()
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
