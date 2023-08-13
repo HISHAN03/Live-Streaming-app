@@ -3,8 +3,7 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { gapi } from "gapi-script";
 const dgram = require('dgram');
-const serverPort=1234;
-const udpClient = dgram.createSocket('udp4');
+
 const LiveStreamPage = () => 
 {
 const videoRef = useRef();
@@ -16,26 +15,6 @@ const [youtubeIngestionUrl, setYoutubeIngestionUrl] = useState('')
 const [youtubeStreamName, setYoutubeStreamName] = useState('')
 const [streamId, setstreamId] = useState('')
 const [ broadcastId,setbroadcastId ] = useState('');
-
-
-const handleSendMediaData = () => {
-  // This is a placeholder method
-  // You should replace this with actual video and audio data handling and encoding
-  const mediaData = "Sample media data"; // This is just a placeholder
-
-  // Send the media data over UDP
-  udpClient.send(mediaData, 0, mediaData.length, serverPort, 'localhost', (err) => {
-    if (err) {
-      console.error('Error sending media data:', err);
-    } else {
-      console.log('Media data sent to server');
-    }
-  });
-};
-
-
-
-
 
 
 gapi.load('client', () => 
@@ -130,7 +109,6 @@ gapi.load('client', () =>
         console.error("Error accessing webcam or microphone:", error);
       }
     };
-
     getMediaStream();
     return () => {
       if (localStream) {
@@ -138,6 +116,8 @@ gapi.load('client', () =>
       }
     };
   }, [isCameraOn, isAudioOn, navigate]);
+
+
 
   const handleCameraToggle = () => {
     setIsCameraOn((prevIsCameraOn) => !prevIsCameraOn);
@@ -276,11 +256,13 @@ return(
         <button onClick={() => authenticate().then(loadClient)}>authenticate</button> 
 
        <button onClick={createYouTubeBroadcast}> broadcast</button>
-       <button onClick={handleSendMediaData}>Send Media Data</button>
+       
 
         <button onClick={createStream}>crete stream</button> 
         <button onClick={bindBroadcastToStream}>4. bind broadcast</button>
         <button onClick={transitionToLive}>live</button>
+        <button onClick={handleSendMediaData}>sending video to server</button>
+
 
       </ButtonContainer> 
 

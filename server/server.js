@@ -4,39 +4,16 @@ const port = 3010;
 const cors = require("cors");
 const dotenv = require("dotenv");
 const User = require("./schema/userModel");
-const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const jwtSecret="reifberuifbwuief";
 const apiKey=process.env.API_KEY;
 const dgram = require("dgram");
 const apiUrl = "https://www.googleapis.com/youtube/v3";
 const { google } = require("googleapis");
-const youtube = google.youtube({
-  version: "v3",
-  auth: apiKey,
-});
+const youtube = google.youtube({ version: "v3",auth: apiKey,});
 dotenv.config();
-
-
-udpServer.on('message', (message, rinfo) => {
-  console.log(`Received message from ${rinfo.address}:${rinfo.port}`);
-  
-  // Handle the received data here
-  // In this example, we save the received data to a file
-  
-  // Generate a unique filename based on the timestamp
-  const timestamp = Date.now();
-  const filename = `received_data_${timestamp}.raw`;
-  
-  // Save the received data to a file
-  fs.writeFile(filename, message, (err) => {
-    if (err) {
-      console.error("Error saving data:", err);
-    } else {
-      console.log(`Data saved to ${filename}`);
-    }
-  });
-});
+app.use(cors(corsOptions));
+app.use(express.json());
 
 
 const mongoose = require("mongoose");
@@ -49,57 +26,12 @@ mongoose
     console.error("Failed to connect to MongoDB:", err);
   });
 
+
 const corsOptions = {
   credentials: true,
   origin: ["http://localhost:3000"], 
   allowedHeaders: ["Content-Type"],
 };
-app.use(cors(corsOptions));
-app.use(express.json());
-
-
-const {
-  inputSettings,
-  youtubeSettings,
-  customRtmpSettings,
-} = require('./ffmpeg')
-
-const ffmpegInput = inputSettings.concat(
-  youtubeSettings(youtube),
-  customRtmpSettings(customRTMP)
-)
-
-const ffmpeg = child_process.spawn('ffmpeg', ffmpegInput)
-
-
-
-ffmpeg.on('close', (code, signal) => {
-  console.log(
-    'FFmpeg child process closed, code ' + code + ', signal ' + signal
-  )
-  // ws.terminate()
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -117,7 +49,8 @@ app.get("/profile", (req, res) => {
     console.log("profile-NOT-connected")
     }});
 
-// Signup route
+
+    
 app.post('/signup', async (req, res) => {
   let { username, password } = req.body;
 
