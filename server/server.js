@@ -12,19 +12,18 @@ const apiUrl = "https://www.googleapis.com/youtube/v3";
 const { google } = require("googleapis");
 const youtube = google.youtube({ version: "v3",auth: apiKey,});
 dotenv.config();
-app.use(cors(corsOptions));
 app.use(express.json());
 
 
 const mongoose = require("mongoose");
 mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => {
-    console.log("mongodb-connected");
-  })
-  .catch((err) => {
-    console.error("Failed to connect to MongoDB:", err);
-  });
+.connect(process.env.MONGO_URL)
+.then(() => {
+  console.log("mongodb-connected");
+})
+.catch((err) => {
+  console.error("Failed to connect to MongoDB:", err);
+});
 
 
 const corsOptions = {
@@ -35,7 +34,7 @@ const corsOptions = {
 
 
 
-
+app.use(cors(corsOptions));
 app.get("/profile", (req, res) => {
   const token = req.cookies?.token;
   if (token) {
@@ -88,7 +87,6 @@ app.post('/signup', async (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const foundUser = await User.findOne({ username });
-  
   if (foundUser) {
     jwt.sign(
       { name: username },
@@ -97,12 +95,10 @@ app.post("/login", async (req, res) => {
       (err, token) => {
         if (err) {
           console.log(err);
-          return res.status(500).json({ message: "Error signing token" });
-        }
-        
+          return res.status(500).json({ message: "Error signing token" });}
         res.cookie("token", token, { sameSite: "none", secure: true }).json({
           id: foundUser._id,
-          message: "Login successful", // Add this response message
+          message: "Login successful", 
         });
       }
     );

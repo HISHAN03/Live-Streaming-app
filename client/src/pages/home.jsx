@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { gapi } from "gapi-script";
-const dgram = require('dgram');
 
 const LiveStreamPage = () => 
 {
@@ -15,7 +14,7 @@ const [youtubeIngestionUrl, setYoutubeIngestionUrl] = useState('')
 const [youtubeStreamName, setYoutubeStreamName] = useState('')
 const [streamId, setstreamId] = useState('')
 const [ broadcastId,setbroadcastId ] = useState('');
-
+const mediaRecorderRef = useRef();
 
 gapi.load('client', () => 
 {
@@ -34,7 +33,7 @@ gapi.load('client', () =>
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
         scope: 'https://www.googleapis.com/auth/youtube', 
       });
-    });
+});
   
   const createYouTubeBroadcast = async () => {
   try {
@@ -92,32 +91,58 @@ gapi.load('client', () =>
   }
 };
 
-  useEffect(() => {
-    let localStream;
-    const getMediaStream = async () => {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: isCameraOn,
-          audio: isAudioOn,
-        });
-        videoRef.current.srcObject = localStream;
-        const peerConnection = new RTCPeerConnection();
-        localStream.getTracks().forEach((track) =>
-          peerConnection.addTrack(track, localStream)
-        );
-      } catch (error) {
-        console.error("Error accessing webcam or microphone:", error);
-      }
-    };
-    getMediaStream();
-    return () => {
-      if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, [isCameraOn, isAudioOn, navigate]);
+useEffect(() => {
+  let localStream;
 
+  const getMediaStream = async () => {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: isCameraOn,
+        audio: isAudioOn,
+      });
+      videoRef.current.srcObject = localStream;
+      mediaRecorderRef.current = new MediaRecorder(localStream, {
+        mimeType: "video/webm;codecs=h264",
+      });
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          // Handle the recorded data here
+          sendRecordedDataToServer(event.data);
+        }
+      };
+    } catch (error) {
+      console.error("Error accessing webcam or microphone:", error);
+    }
+  };
 
+  getMediaStream();
+
+  return () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+    }
+  };
+}, [isCameraOn, isAudioOn]);
+
+const handleStartRecording = () => {
+  if (mediaRecorderRef.current) {
+    mediaRecorderRef.current.start();
+    console.log("Recording started.");
+  }
+};
+
+const handleStopRecording = () => {
+  if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+    mediaRecorderRef.current.stop();
+    console.log("Recording stopped.");
+  }
+};
+
+const sendRecordedDataToServer = (data) => {
+  // Implement the logic to send the recorded data to the server
+  // For example, you can use WebSocket, fetch API, or other methods
+  console.log("Sending recorded data to server:", data);
+};
 
   const handleCameraToggle = () => {
     setIsCameraOn((prevIsCameraOn) => !prevIsCameraOn);
@@ -126,29 +151,6 @@ gapi.load('client', () =>
   const handleAudioToggle = () => {
     setIsAudioOn((prevIsAudioOn) => !prevIsAudioOn);
   };
-
- 
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   const authenticate = () => {
     return gapi.auth2
@@ -253,15 +255,15 @@ return(
         <button onClick={handleAudioToggle}>
             {isAudioOn ? "Mute Audio" : "Unmute Audio"}
         </button>
+        <video ref={videoRef} autoPlay muted />
+      <button onClick={handleStartRecording}>Start Recording</button>
+      <button onClick={handleStopRecording}>Stop Recording</button>
         <button onClick={() => authenticate().then(loadClient)}>authenticate</button> 
 
        <button onClick={createYouTubeBroadcast}> broadcast</button>
-       
-
         <button onClick={createStream}>crete stream</button> 
         <button onClick={bindBroadcastToStream}>4. bind broadcast</button>
         <button onClick={transitionToLive}>live</button>
-        <button onClick={handleSendMediaData}>sending video to server</button>
 
 
       </ButtonContainer> 
