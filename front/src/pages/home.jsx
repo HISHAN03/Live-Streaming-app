@@ -2,9 +2,32 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { gapi } from "gapi-script";
+import { io } from "socket.io-client";
+const socket = io("http://localhost:3100")
+
 
 const LiveStreamPage = () => 
 {
+
+
+  socket.on("connection",(client)=>{
+    console.log('New websocket connection');
+  
+   client.on('disconnect', () => {
+    console.log('New websocket disconnected');
+  });
+  })
+
+
+
+
+
+
+
+
+
+
+
 const videoRef = useRef();
 const [isCameraOn, setIsCameraOn] = useState(true);
 const [isAudioOn, setIsAudioOn] = useState(true);
@@ -15,6 +38,12 @@ const [youtubeStreamName, setYoutubeStreamName] = useState('')
 const [streamId, setstreamId] = useState('')
 const [ broadcastId,setbroadcastId ] = useState('');
 const mediaRecorderRef = useRef();
+
+
+
+
+
+
 
 gapi.load('client', () => 
 {
@@ -45,12 +74,26 @@ gapi.load('client', () =>
       console.log("Access token not found");
       return;
     }
+
+
+
+    
+  
+
+
+
+
+
+
+
+
+
     
     const broadcastData = {
       snippet: {
         title: "Test broadcast",
-        scheduledStartTime: "2023-08-10T20:50:00Z",
-        scheduledEndTime: "2023-08-10T20:55:00Z",
+        scheduledStartTime: "2023-10-10T20:50:00Z",
+        scheduledEndTime: "2023-10-10T20:55:00Z",
       },
       contentDetails: {
         enableClosedCaptions: true,
@@ -73,19 +116,15 @@ gapi.load('client', () =>
       console.log('Response', res)
       console.log(res.result.id)
       setbroadcastId(res.result.id)
+      if (res.result) {
+        console.log("Broadcast created successfully:", res.result);
+      }
+  
     })
     .catch((err) => {
       console.error('Execute error', err)
     });
 
-    if (response.result) {
-      console.log("Broadcast created successfully:", response.result);
-  
-
-      navigate("/home");
-    } else {
-      console.log("Error creating broadcast");
-    }
   } catch (error) {
     console.error("An error occurred:", error);
   }
@@ -106,10 +145,11 @@ useEffect(() => {
       });
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
-          // Handle the recorded data here
-          sendRecordedDataToServer(event.data);
+  
+      
         }
       };
+      
     } catch (error) {
       console.error("Error accessing webcam or microphone:", error);
     }
@@ -128,8 +168,10 @@ const handleStartRecording = () => {
   if (mediaRecorderRef.current) {
     mediaRecorderRef.current.start();
     console.log("Recording started.");
+  
   }
 };
+
 
 const handleStopRecording = () => {
   if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
@@ -157,7 +199,7 @@ const sendRecordedDataToServer = (data) => {
       .getAuthInstance()
       .signIn({ scope: 'https://www.googleapis.com/auth/youtube.force-ssl' })
       .then((res) => {
-        console.log(res)
+        console.log(res+"aut sucess")
       })
       .catch((err) => console.log(err))
   }
@@ -225,6 +267,8 @@ const sendRecordedDataToServer = (data) => {
         })
     }
 
+    
+
 
     const transitionToLive = () => {
       return gapi.client.youtube.liveBroadcasts
@@ -255,7 +299,7 @@ return(
         <button onClick={handleAudioToggle}>
             {isAudioOn ? "Mute Audio" : "Unmute Audio"}
         </button>
-        <video ref={videoRef} autoPlay muted />
+        {/* <video ref={videoRef} autoPlay muted /> */}
       <button onClick={handleStartRecording}>Start Recording</button>
       <button onClick={handleStopRecording}>Stop Recording</button>
         <button onClick={() => authenticate().then(loadClient)}>authenticate</button> 

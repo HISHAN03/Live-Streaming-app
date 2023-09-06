@@ -50,7 +50,7 @@ export default function Login(){
             body: JSON.stringify(data),
             credentials: 'include'
         }
-        let res = await fetch("http://localhost:3010/login", options);
+        let res = await fetch("http://localhost:3100/login", options);
 
         let output = await res.json();
 

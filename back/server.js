@@ -1,7 +1,20 @@
-const express = require("express");
+const express = require('express');
 const app = express();
-const port = 3010;
+const http = require("http").createServer(app);
+const io = require('socket.io')(http);
 const cors = require("cors");
+
+const corsOptions = {
+  origin: `http://localhost:3000`, 
+  allowedHeaders: ["Content-Type"],
+  credentials: true, 
+};
+app.use(cors(corsOptions));
+
+
+
+
+const port = 3100;
 const dotenv = require("dotenv");
 const User = require("./schema/userModel");
 const jwt = require("jsonwebtoken");
@@ -15,26 +28,48 @@ dotenv.config();
 app.use(express.json());
 
 
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+});
+
+
+
 const mongoose = require("mongoose");
 mongoose
 .connect(process.env.MONGO_URL)
 .then(() => {
   console.log("mongodb-connected");
-})
+})``
 .catch((err) => {
   console.error("Failed to connect to MongoDB:", err);
 });
 
 
-const corsOptions = {
-  credentials: true,
-  origin: ["http://localhost:3000"], 
-  allowedHeaders: ["Content-Type"],
-};
 
 
 
-app.use(cors(corsOptions));
+
+
+
+
+
+
+
+
+
+
+
+
+// const corsOptions = {
+//   credentials: true,
+//   origin: ["http://localhost:3000"], 
+//   allowedHeaders: ["Content-Type"],
+// };
+
+
+
+// app.use(cors(corsOptions));
 app.get("/profile", (req, res) => {
   const token = req.cookies?.token;
   if (token) {
