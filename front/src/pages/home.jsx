@@ -2,67 +2,87 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { gapi } from "gapi-script";
-import { io } from "socket.io-client";
-const socket = io("http://localhost:3100")
+import socketIOClient from 'socket.io-client';
+const serverEndpoint = 'http://localhost:3100';
 
 
 const LiveStreamPage = () => 
 {
-
-
-  socket.on("connection",(client)=>{
-    console.log('New websocket connection');
-  
-   client.on('disconnect', () => {
-    console.log('New websocket disconnected');
-  });
-  })
-
-
-
-
-
-
-
+  const [recordingActive, setRecordingActive] = useState(false); 
+  const [isRecording, setIsRecording] = useState(false);
+  const videoRef = useRef();
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isAudioOn, setIsAudioOn] = useState(true);
+  const navigate = useNavigate();
+  const [searchInput, setSearchInput] = useState("");
+  const [youtubeStreamName, setYoutubeStreamName] = useState('')
+  const [youtubeIngestionUrl, setYoutubeIngestionUrl] = useState('')
+  const [streamId, setstreamId] = useState('')
+  const [ broadcastId,setbroadcastId ] = useState('');
+  const mediaRecorderRef = useRef();
+  const socket = socketIOClient(serverEndpoint);
 
 
 
+  useEffect(() => {
 
-const videoRef = useRef();
-const [isCameraOn, setIsCameraOn] = useState(true);
-const [isAudioOn, setIsAudioOn] = useState(true);
-const navigate = useNavigate();
-const [searchInput, setSearchInput] = useState("");
-const [youtubeIngestionUrl, setYoutubeIngestionUrl] = useState('')
-const [youtubeStreamName, setYoutubeStreamName] = useState('')
-const [streamId, setstreamId] = useState('')
-const [ broadcastId,setbroadcastId ] = useState('');
-const mediaRecorderRef = useRef();
+    const handleFramesReceived = () => {
+      console.log('Video frames received successfully'); // You can replace this with your desired action
+    };
+
+    socket.on('connect', () => {
+      console.log('Connected to the server');
+
+      socket.on('framesReceived', handleFramesReceived);
+    });
+
+    socket.on('disconnect', () => {
+    console.log('Disconnected from the server');
+    socket.off('framesReceived', handleFramesReceived);
+    });
+
+    // const handleDataAvailable = (event) => {
+    //   if (event.data && event.data.size > 0) {
+    //     if (socket) {
+    //       console.log('sending frames');
+    //       socket.emit('videoFrame', event.data);
+
+    //       // Listen for a response from the server
+    //       socket.on('framesReceived', () => {
+    //         console.log('Server acknowledged frames received successfully.');
+    //         // You can add additional handling here if needed
+    //       });
+    //     }
+    //   }
+    // };
+
+    // mediaRecorderRef.current.ondataavailable = handleDataAvailable;
 
 
-
-
-
-
+    return () => {
+    socket.disconnect();
+    };
+    }, []);
 
 gapi.load('client', () => 
-{
-  gapi.client.init({
+ {
+    gapi.client.init({
     apiKey: "AIzaSyBh4zJKpPWEhYv4L27a6bPMdIhHFgwm1bw",
-      clientId: "1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com",
-      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
-      scope: 'https://www.googleapis.com/auth/youtube', 
+    clientId: "1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com",
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
+    scope: 'https://www.googleapis.com/auth/youtube', 
     });
   });
 
-  gapi.load('client', () => {
+gapi.load('client', () => 
+ {
     gapi.client.init({
-      apiKey: "AIzaSyBh4zJKpPWEhYv4L27a6bPMdIhHFgwm1bw",
-        clientId: "1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com",
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
-        scope: 'https://www.googleapis.com/auth/youtube', 
-      });
-});
+    apiKey: "AIzaSyBh4zJKpPWEhYv4L27a6bPMdIhHFgwm1bw",
+    clientId: "1064538177379-bjr5kdphshesmc3obqdp27ujbqeo5hh5.apps.googleusercontent.com",
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
+    scope: 'https://www.googleapis.com/auth/youtube', 
+    });
+ });
   
   const createYouTubeBroadcast = async () => {
   try {
@@ -75,20 +95,6 @@ gapi.load('client', () =>
       return;
     }
 
-
-
-    
-  
-
-
-
-
-
-
-
-
-
-    
     const broadcastData = {
       snippet: {
         title: "Test broadcast",
@@ -141,13 +147,25 @@ useEffect(() => {
       });
       videoRef.current.srcObject = localStream;
       mediaRecorderRef.current = new MediaRecorder(localStream, {
-        mimeType: "video/webm;codecs=h264",
+        videoBitsPerSecond: 3000000,
+        audioBitsPerSecond: 64000,
+   
       });
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
-  
-      
+          if (socket) { // Note: Removed .current
+            console.log('sending frames');
+            socket.emit('videoFrame', event.data);
+    
+            // Listen for a response from the server
+            socket.on('framesReceived', () => {
+              console.log('Server acknowledged frames received successfully.');
+              // You can add additional handling here if needed
+            });
+          }
         }
+       // mediaRecorderRef.current.start();
+
       };
       
     } catch (error) {
@@ -162,23 +180,38 @@ useEffect(() => {
       localStream.getTracks().forEach((track) => track.stop());
     }
   };
-}, [isCameraOn, isAudioOn]);
-
-const handleStartRecording = () => {
-  if (mediaRecorderRef.current) {
+}, [isCameraOn, isAudioOn,recordingActive]);
+const toggleRecording = () => {
+  if (!isRecording) {
     mediaRecorderRef.current.start();
+    setIsRecording(true);
+    setRecordingActive(true); // Start recording
     console.log("Recording started.");
-  
-  }
-};
-
-
-const handleStopRecording = () => {
-  if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+  } else {
     mediaRecorderRef.current.stop();
+    setIsRecording(false);
+    setRecordingActive(false); // Stop recording
     console.log("Recording stopped.");
   }
 };
+
+// const handleStartRecording = () => {
+//   if (mediaRecorderRef.current && !isRecording) {
+    
+//     mediaRecorderRef.current.start();
+//     setIsRecording(true);
+//     console.log("Recording started.");
+//   }
+// };
+
+
+// const handleStopRecording = () => {
+//   if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+//     mediaRecorderRef.current.stop();
+//     setIsRecording(false);
+//     console.log("Recording stopped.");
+//   }
+// };
 
 const sendRecordedDataToServer = (data) => {
   // Implement the logic to send the recorded data to the server
@@ -222,36 +255,66 @@ const sendRecordedDataToServer = (data) => {
         resource: {
           snippet: {
             title: "Your new video stream's name",
-            description:
-              'A description of your video stream. This field is optional.',
-          },
-          cdn: {
-            frameRate: 'variable',
-            ingestionType: 'rtmp',
-            resolution: 'variable',
-            format: '',
-          },
-          contentDetails: {
-            isReusable: true,
-          },
+          description:
+            'A description of your video stream. This field is optional.',
         },
-      })
-      .then((res) => {
-        console.log('Response', res)
+        cdn: {
+          frameRate: 'variable',
+          ingestionType: 'rtmp',
+          resolution: 'variable',
+          format: '',
+        },
+        contentDetails: {
+          isReusable: true,
+        },
+      },
+    })
+    .then((res) => {
+      console.log('Response', res)
 
-        setstreamId(res.result.id)
-        console.log('streamID' + res.result.id)
-
-        setYoutubeIngestionUrl(res.result.cdn.ingestionInfo.ingestionAddress)
-        console.log(res.result.cdn.ingestionInfo.ingestionAddress)
-
-        setYoutubeStreamName(res.result.cdn.ingestionInfo.streamName)
-        console.log(res.result.cdn.ingestionInfo.streamName)
-      })
-      .catch((err) => {
-        console.log('Execute error', err)
+      setstreamId(res.result.id)
+      console.log('streamID' + res.result.id)
+      setYoutubeIngestionUrl(res.result.cdn.ingestionInfo.ingestionAddress)
+      console.log(res.result.cdn.ingestionInfo.ingestionAddress)
+      sendStreamDataToServer(res.result.id, res.result.cdn.ingestionInfo.ingestionAddress,res.result.cdn.ingestionInfo.streamName);
+      setYoutubeStreamName(res.result.cdn.ingestionInfo.streamName)
+      console.log("streamName"+res.result.cdn.ingestionInfo.streamName)
+    })
+    .catch((err) => {
+      console.log('Execute error', err)
       })
     }
+
+    const sendStreamDataToServer = (streamId, ingestionUrl,YoutubeStreamName) => {
+      const serverUrl = 'http://localhost:3100/youtube'; // Replace with your server's URL
+    
+      const data = {
+        streamId: streamId,
+        ingestionUrl: ingestionUrl,
+        iid:YoutubeStreamName
+      };
+    
+      // Make an HTTP POST request to your server
+      fetch(serverUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+        .then((response) => {
+          if (response.ok) {
+            console.log('Data sent to server successfully.');
+          } else {
+            console.error('Failed to send data to server.');
+          }
+        })
+        .catch((error) => {
+          console.error('Error sending data to server:', error);
+        });
+    }
+
+
     const bindBroadcastToStream = () => {
       return gapi.client.youtube.liveBroadcasts
         .bind({
@@ -273,9 +336,9 @@ const sendRecordedDataToServer = (data) => {
     const transitionToLive = () => {
       return gapi.client.youtube.liveBroadcasts
         .transition({
-          part: ['id,snippet,contentDetails,status'],
           broadcastStatus: 'live',
           id: broadcastId,
+          part: ['id,snippet,contentDetails,status'],
         })
         .then((res) => {
           // Handle the results here (response.result has the parsed body).
@@ -299,9 +362,12 @@ return(
         <button onClick={handleAudioToggle}>
             {isAudioOn ? "Mute Audio" : "Unmute Audio"}
         </button>
+        <button onClick={toggleRecording}>
+          {isRecording ? "Stop Recording" : "Start Recording"}
+        </button>
         {/* <video ref={videoRef} autoPlay muted /> */}
-      <button onClick={handleStartRecording}>Start Recording</button>
-      <button onClick={handleStopRecording}>Stop Recording</button>
+      {/* <button onClick={handleStartRecording}>Start Recording</button>
+      <button onClick={handleStopRecording}>Stop Recording</button> */}
         <button onClick={() => authenticate().then(loadClient)}>authenticate</button> 
 
        <button onClick={createYouTubeBroadcast}> broadcast</button>
